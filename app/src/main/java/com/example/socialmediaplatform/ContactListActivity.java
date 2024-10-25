@@ -2,10 +2,13 @@ package com.example.socialmediaplatform;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.provider.ContactsContract;
+import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
@@ -56,8 +59,6 @@ public class ContactListActivity extends AppCompatActivity {
     // Method to load contacts
     private void loadContacts() {
         List<String> contactList = new ArrayList<>();
-
-        // Query the contacts
         Cursor cursor = getContentResolver().query(
                 ContactsContract.Contacts.CONTENT_URI,
                 null,
@@ -67,18 +68,27 @@ public class ContactListActivity extends AppCompatActivity {
 
         if (cursor != null) {
             while (cursor.moveToNext()) {
-                // Get the contact name
                 @SuppressLint("Range") String displayName = cursor.getString(
                         cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
-
                 contactList.add(displayName);
             }
             cursor.close();
         }
 
-        // Display the contacts in a ListView (or RecyclerView)
-        ListView listView = findViewById(R.id.listViewContacts); // Make sure you have a ListView in your layout
+        ListView listView = findViewById(R.id.listViewContacts);
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, contactList);
         listView.setAdapter(adapter);
+
+        // Set an item click listener on the list view
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                String selectedContact = contactList.get(position);
+                // Open ChatRoomActivity and pass the contact name
+                Intent intent = new Intent(ContactListActivity.this, ChatRoomActivity.class);
+                intent.putExtra("CONTACT_NAME", selectedContact);
+                startActivity(intent);
+            }
+        });
     }
 }
