@@ -113,4 +113,14 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return this.getReadableDatabase();
     }
 
+    public void updateMessage(String messageId, String newMessage) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put("message", newMessage); // Assuming 'message' is the column name
+
+        // Update the message with the given ID
+        db.update("messages", values, "id = ?", new String[]{messageId});
+        db.close();
+    }
+
 }
