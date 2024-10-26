@@ -4,6 +4,7 @@
 
     <!-- Add the READ_CONTACTS permission here -->
     <uses-permission android:name="android.permission.READ_CONTACTS"/>
+    <uses-permission android:name="android.permission.INTERNET"/>
 
     <application
         android:allowBackup="true"

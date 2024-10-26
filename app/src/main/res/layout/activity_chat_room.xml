@@ -5,6 +5,31 @@
     android:orientation="vertical"
     android:padding="8dp">
 
+    <!-- Toolbar with back button -->
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/colorPrimary">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Chat Room"
+            android:textColor="@android:color/white"
+            android:layout_gravity="center"/>
+
+        <ImageButton
+            android:id="@+id/btnBack"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:background="?attr/selectableItemBackground"
+            android:contentDescription="Back"
+            android:src="@android:drawable/ic_menu_close_clear_cancel"
+            android:padding="8dp"/>
+    </androidx.appcompat.widget.Toolbar>
+
     <!-- Chat messages display area -->
     <ScrollView
         android:id="@+id/scrollView"

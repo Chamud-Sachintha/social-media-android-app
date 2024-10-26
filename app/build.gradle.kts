@@ -1,5 +1,6 @@
 plugins {
     id("com.android.application")
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -36,4 +37,13 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
+
+    // Firebase Authentication
+    implementation("com.google.firebase:firebase-auth:21.3.0") // Or the latest version
+
+    // Firebase Realtime Database
+    implementation("com.google.firebase:firebase-database:20.0.3")
+
+    implementation(platform("com.google.firebase:firebase-bom:33.5.1"))
+    implementation("com.google.firebase:firebase-firestore:24.9.1")
 }

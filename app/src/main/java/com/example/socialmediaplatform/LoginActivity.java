@@ -1,6 +1,7 @@
 package com.example.socialmediaplatform;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -41,6 +42,8 @@ public class LoginActivity extends AppCompatActivity {
                 } else {
                     boolean isUserValid = databaseHelper.checkUser(email, password);
                     if (isUserValid) {
+                        String userId = databaseHelper.getUserIdFromEmail(email);
+                        saveUserIdToSharedPreferences(userId);
                         Toast.makeText(LoginActivity.this, "Login Successful", Toast.LENGTH_SHORT).show();
                         // Redirect to a home or main page after login
                         Intent intent = new Intent(LoginActivity.this, HomeActivity.class);
@@ -62,5 +65,12 @@ public class LoginActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
+    }
+
+    private void saveUserIdToSharedPreferences(String userId) {
+        SharedPreferences sharedPreferences = getSharedPreferences("UserPrefs", MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putString("CURRENT_USER_ID", userId); // Store the current user's ID
+        editor.apply(); // Save changes
     }
 }
