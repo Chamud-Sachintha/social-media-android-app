@@ -80,7 +80,7 @@ public class LoginActivity extends AppCompatActivity {
 
                             if (storedPassword != null && storedPassword.equals(password)) {
                                 // Passwords match
-                                String userId = userDoc.getId();
+                                String userId = userDoc.getString("userId");
                                 saveUserIdToSharedPreferences(userId);
                                 Toast.makeText(LoginActivity.this, "Login Successful", Toast.LENGTH_SHORT).show();
                                 Intent intent = new Intent(LoginActivity.this, HomeActivity.class);

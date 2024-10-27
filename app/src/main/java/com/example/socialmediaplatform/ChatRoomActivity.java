@@ -1,9 +1,13 @@
 package com.example.socialmediaplatform;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.database.Cursor;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -19,9 +23,18 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.socialmediaplatform.helpers.DatabaseHelper;
 import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -33,12 +46,15 @@ public class ChatRoomActivity extends AppCompatActivity {
     private ScrollView scrollView;
     private ImageButton btnBack;
     private DatabaseHelper databaseHelper;
-    private String userId, contactId;
+    private String userId, contactId, contactName;
+    FirebaseFirestore firestore;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chat_room);
+
+        firestore = FirebaseFirestore.getInstance();
 
         chatMessagesLayout = findViewById(R.id.chatMessagesLayout);
         editTextMessage = findViewById(R.id.editTextMessage);
@@ -48,7 +64,7 @@ public class ChatRoomActivity extends AppCompatActivity {
         btnBack = findViewById(R.id.btnBack);
 
         // Get the contact name from the intent
-        String contactName = getIntent().getStringExtra("CONTACT_NAME");
+        contactName = getIntent().getStringExtra("CONTACT_NAME");
         userId = getIntent().getStringExtra("USER_ID"); // Current user ID
         contactId = getIntent().getStringExtra("CONTACT_ID"); // Contact ID
         setTitle("Chat with " + contactName);
@@ -105,8 +121,50 @@ public class ChatRoomActivity extends AppCompatActivity {
         });
 
     }
-
     private void loadChatHistory() {
+        if (isInternetAvailable()) {
+            syncMessagesFromFirebase();
+        }
+
+        loadMessagesFromSQLite();
+    }
+
+    private void syncMessagesFromFirebase() {
+        firestore.collection("messages")
+                .whereEqualTo("userId", userId)
+                .whereEqualTo("contactId", contactId)
+                .get()
+                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                    @Override
+                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                        if (task.isSuccessful() && task.getResult() != null) {
+                            for (QueryDocumentSnapshot document : task.getResult()) {
+                                // Retrieve fields from Firestore document
+                                String messageId = document.getId();
+                                String senderId = document.getString("userId");
+                                String message = document.getString("message");
+                                Long timestamp = document.getLong("timestamp");
+
+                                // Validate fields and save to SQLite if valid
+                                if (senderId != null && message != null && timestamp != null) {
+                                    databaseHelper.addMessage(userId, contactId, message, timestamp);
+                                }
+                            }
+                        } else {
+                            Log.d("FirestoreInfo", "No messages found or failed to fetch messages.");
+                        }
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Log.e("FirestoreError", "Error fetching messages from Firestore", e);
+                    }
+                });
+    }
+
+
+    private void loadMessagesFromSQLite() {
         Cursor cursor = databaseHelper.getMessages(userId, contactId);
         if (cursor.moveToFirst()) {
             do {
@@ -119,6 +177,13 @@ public class ChatRoomActivity extends AppCompatActivity {
             } while (cursor.moveToNext());
         }
         cursor.close();
+    }
+
+
+    private boolean isInternetAvailable() {
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+        return activeNetwork != null && activeNetwork.isConnectedOrConnecting();
     }
 
     private void displayMessage(String message, String messageId) {
@@ -149,25 +214,37 @@ public class ChatRoomActivity extends AppCompatActivity {
     }
 
     private void showEditDialog(String messageId, String currentMessage) {
-        // Logic to show a dialog with an EditText to modify the message
+        // Create the dialog for editing or deleting a message
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Edit Message");
+        builder.setTitle("Edit or Delete Message");
 
-        // Set up the input
+        // Set up the input field
         final EditText input = new EditText(this);
         input.setText(currentMessage);
         builder.setView(input);
 
+        // Add the "OK" button for editing
         builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 String updatedMessage = input.getText().toString();
                 if (!updatedMessage.isEmpty()) {
-                    updateMessageInDatabase(messageId, updatedMessage); // Update the message in the database
-                    refreshChatHistory(); // Reload the chat history to reflect changes
+                    updateMessageInDatabase(messageId, updatedMessage); // Update the message
+                    refreshChatHistory(); // Refresh to display the updated message
                 }
             }
         });
+
+        // Add a "Delete" button
+        builder.setNeutralButton("Delete", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                deleteMessageFromDatabase(messageId); // Delete the message
+                refreshChatHistory(); // Refresh to remove the deleted message from display
+            }
+        });
+
+        // Add a "Cancel" button
         builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
@@ -179,8 +256,13 @@ public class ChatRoomActivity extends AppCompatActivity {
     }
 
     private void updateMessageInDatabase(String messageId, String newMessage) {
-        // Your logic to update the message in the database
-        databaseHelper.updateMessage(messageId, newMessage); // Example method, implement it in your DatabaseHelper class
+        // Logic to update the message in the database
+        databaseHelper.updateMessage(messageId, newMessage); // Implement in DatabaseHelper
+    }
+
+    private void deleteMessageFromDatabase(String messageId) {
+        // Logic to delete the message from the database
+        databaseHelper.deleteMessage(messageId); // Implement this in your DatabaseHelper class
     }
 
     private void refreshChatHistory() {

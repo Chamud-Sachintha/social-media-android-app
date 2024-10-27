@@ -93,20 +93,27 @@ public class RegisterActivity extends AppCompatActivity {
         userData.put("phone", phone);
         userData.put("password", password); // Again, be cautious about storing passwords
 
-        firestore.collection("users")
-                .add(userData)
-                .addOnCompleteListener(new OnCompleteListener<DocumentReference>() {
-                    @Override
-                    public void onComplete(@NonNull Task<DocumentReference> task) {
-                        if (task.isSuccessful()) {
-                            Toast.makeText(RegisterActivity.this, "Registration Successful", Toast.LENGTH_SHORT).show();
-                            Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);
-                            startActivity(intent);
-                            finish();
-                        } else {
-                            Toast.makeText(RegisterActivity.this, "Failed to save user data", Toast.LENGTH_SHORT).show();
+        boolean isInserted = databaseHelper.insertUser(name, phone, password);
+
+        if (isInserted) {
+            userData.put("userId", databaseHelper.getUserIdFromEmail(phone));
+            firestore.collection("users")
+                    .add(userData)
+                    .addOnCompleteListener(new OnCompleteListener<DocumentReference>() {
+                        @Override
+                        public void onComplete(@NonNull Task<DocumentReference> task) {
+                            if (task.isSuccessful()) {
+                                Toast.makeText(RegisterActivity.this, "Registration Successful", Toast.LENGTH_SHORT).show();
+                                Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);
+                                startActivity(intent);
+                                finish();
+                            } else {
+                                Toast.makeText(RegisterActivity.this, "Failed to save user data", Toast.LENGTH_SHORT).show();
+                            }
                         }
-                    }
-                });
+                    });
+        } else {
+            Toast.makeText(RegisterActivity.this, "Failed to save user data to Local", Toast.LENGTH_SHORT).show();
+        }
     }
 }

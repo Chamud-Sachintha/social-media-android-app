@@ -123,4 +123,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.close();
     }
 
+    public void deleteMessage(String messageId) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        db.delete("messages", "id = ?", new String[]{messageId});
+        db.close();
+    }
+
 }
