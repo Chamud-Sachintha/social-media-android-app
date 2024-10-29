@@ -7,6 +7,9 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class DatabaseHelper extends SQLiteOpenHelper {
 
     private static final int DATABASE_VERSION = 1;
@@ -68,15 +71,29 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return exists;
     }
 
-    public void addMessage(String senderId, String receiverId, String message, long timestamp) {
+    public long addMessage(String senderId, String receiverId, String message, long timestamp) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put(COLUMN_SENDER_ID, senderId);
         values.put(COLUMN_RECEIVER_ID, receiverId);
         values.put(COLUMN_MESSAGE, message);
         values.put(COLUMN_TIMESTAMP, timestamp);
-        db.insert(TABLE_MESSAGES, null, values);
+
+        // Insert the new row and get the newly inserted row ID
+        long newMessageId = db.insert(TABLE_MESSAGES, null, values);
         db.close();
+
+        return newMessageId;
+    }
+
+    public boolean isMessageExists(String messageId) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        String query = "SELECT 1 FROM messages WHERE id = ?";
+        Cursor cursor = db.rawQuery(query, new String[]{messageId});
+        boolean exists = (cursor.getCount() > 0);
+        cursor.close();
+        db.close();
+        return exists;
     }
 
     public Cursor getMessages(String senderId, String receiverId) {
@@ -128,5 +145,34 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.delete("messages", "id = ?", new String[]{messageId});
         db.close();
     }
+
+    public List<String> getContactsWithChatHistory(String userId) {
+        List<String> contacts = new ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+
+        // Query to select distinct contacts with a join to get user names
+        String query = "SELECT DISTINCT users.id, users.name " +
+                "FROM " + TABLE_MESSAGES + " AS messages " +
+                "JOIN users ON messages.receiver_id = users.id " +
+                "WHERE messages.sender_id = ?";
+
+        Cursor cursor = db.rawQuery(query, new String[]{userId});
+
+        if (cursor.moveToFirst()) {
+            do {
+                @SuppressLint("Range") String contactId = cursor.getString(cursor.getColumnIndex("ID"));
+                @SuppressLint("Range") String contactName = cursor.getString(cursor.getColumnIndex("NAME"));
+
+                // Format as "contactName (contactId)" or use any format you prefer
+                contacts.add(contactName + " |" + contactId);
+            } while (cursor.moveToNext());
+        }
+
+        cursor.close();
+        db.close();
+
+        return contacts;
+    }
+
 
 }

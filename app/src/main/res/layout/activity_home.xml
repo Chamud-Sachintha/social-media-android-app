@@ -3,15 +3,17 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- Your main content can go here -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Welcome to Home Page"
-        android:layout_centerInParent="true"
-        android:textSize="18sp"/>
+    <!-- ListView to display contacts with chat history -->
+    <ListView
+        android:id="@+id/contactsListView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="16dp"
+        android:layout_above="@id/fabAddContact"
+        android:divider="@android:color/darker_gray"
+        android:dividerHeight="1dp" />
 
-    <!-- Floating Action Button for adding contacts -->
+    <!-- Floating Action Button for adding new contacts -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabAddContact"
         android:layout_width="wrap_content"
@@ -19,6 +21,6 @@
         android:layout_alignParentBottom="true"
         android:layout_alignParentEnd="true"
         android:layout_margin="16dp"
-        android:src="@drawable/ic_add" /> <!-- Ensure you have a 'plus' icon in the drawable folder -->
+        android:src="@drawable/ic_add" />
 
 </RelativeLayout>

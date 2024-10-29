@@ -78,13 +78,14 @@ public class ChatRoomActivity extends AppCompatActivity {
                 if (!message.isEmpty()) {
 
                     long timestamp = System.currentTimeMillis();
-                    databaseHelper.addMessage(userId, contactId, message, timestamp);
+                    long messageId = databaseHelper.addMessage(userId, contactId, message, timestamp);
 
                     FirebaseFirestore firestore = FirebaseFirestore.getInstance();
 
                     // Create a message object for Firebase
                     Map<String, Object> messageData = new HashMap<>();
                     messageData.put("userId", userId);
+                    messageData.put("messageId", String.valueOf(messageId));
                     messageData.put("contactId", contactId);
                     messageData.put("message", message);
                     messageData.put("timestamp", timestamp);
@@ -140,14 +141,16 @@ public class ChatRoomActivity extends AppCompatActivity {
                         if (task.isSuccessful() && task.getResult() != null) {
                             for (QueryDocumentSnapshot document : task.getResult()) {
                                 // Retrieve fields from Firestore document
-                                String messageId = document.getId();
+                                String messageId = document.getString("messageId");
                                 String senderId = document.getString("userId");
                                 String message = document.getString("message");
                                 Long timestamp = document.getLong("timestamp");
 
                                 // Validate fields and save to SQLite if valid
                                 if (senderId != null && message != null && timestamp != null) {
-                                    databaseHelper.addMessage(userId, contactId, message, timestamp);
+                                    if (!databaseHelper.isMessageExists(messageId)) {
+                                        databaseHelper.addMessage(userId, contactId, message, timestamp);
+                                    }
                                 }
                             }
                         } else {
