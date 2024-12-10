@@ -21,7 +21,6 @@ public class HomeActivity extends AppCompatActivity {
     FloatingActionButton fabAddContact;
     private ListView contactsListView;
     private DatabaseHelper databaseHelper;
-//    private String userId = this.getCurrentUserId(); // Replace with actual user ID
     private ArrayAdapter<String> adapter;
 
     @Override

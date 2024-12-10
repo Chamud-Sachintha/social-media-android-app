@@ -12,6 +12,7 @@ import android.provider.ContactsContract;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.ListView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
@@ -33,18 +34,26 @@ public class ContactListActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_contact_list);
 
-        // Check for permission
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS)
                 != PackageManager.PERMISSION_GRANTED) {
-            // Request permission
             ActivityCompat.requestPermissions(this,
                     new String[]{Manifest.permission.READ_CONTACTS},
                     PERMISSIONS_REQUEST_READ_CONTACTS);
         } else {
-            // Permission already granted
             dbHelper = new DatabaseHelper(this);
             loadContacts();
         }
+
+        Button btnBack = findViewById(R.id.btnBack);
+        btnBack.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // Redirect to activity_home.xml
+                Intent intent = new Intent(ContactListActivity.this, HomeActivity.class);
+                startActivity(intent);
+                finish(); // Finish the current activity
+            }
+        });
     }
 
     @Override
@@ -65,7 +74,7 @@ public class ContactListActivity extends AppCompatActivity {
     // Method to load contacts
     private void loadContacts() {
         List<String> contactList = new ArrayList<>();
-        List<String> registeredContacts = getRegisteredContactsFromDatabase(); // Fetch registered contacts from SQLite
+        List<String> registeredContacts = getRegisteredContactsFromDatabase();
 
         // Query contacts from the device
         Cursor cursor = getContentResolver().query(
@@ -80,11 +89,9 @@ public class ContactListActivity extends AppCompatActivity {
                 @SuppressLint("Range") String displayName = cursor.getString(
                         cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
 
-                // Only add contacts that are in the registeredContacts list
                 if (registeredContacts.contains(displayName)) {
-                    // Assuming you have a method to get the user ID for the contact
-                    String contactUserId = getUserIdForContact(displayName); // Replace with actual implementation
-                    contactList.add(displayName + "|" + contactUserId); // Store display name and user ID
+                    String contactUserId = getUserIdForContact(displayName);
+                    contactList.add(displayName + "|" + contactUserId);
                 }
             }
             cursor.close();
@@ -94,19 +101,17 @@ public class ContactListActivity extends AppCompatActivity {
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, contactList);
         listView.setAdapter(adapter);
 
-        // Set an item click listener on the list view
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 String selectedContact = contactList.get(position);
-                String[] parts = selectedContact.split("\\|"); // Split to get name and user ID
+                String[] parts = selectedContact.split("\\|");
                 String contactName = parts[0];
                 String contactUserId = parts[1];
 
                 // Get the current logged-in user ID
-                String currentUserId = getCurrentUserId(); // Implement this method to retrieve the current user's ID
+                String currentUserId = getCurrentUserId();
 
-                // Open ChatRoomActivity and pass the contact name, current user ID, and selected contact's user ID
                 Intent intent = new Intent(ContactListActivity.this, ChatRoomActivity.class);
                 intent.putExtra("CONTACT_NAME", contactName);
                 intent.putExtra("CONTACT_ID", contactUserId);
@@ -118,11 +123,11 @@ public class ContactListActivity extends AppCompatActivity {
 
     private List<String> getRegisteredContactsFromDatabase() {
         List<String> registeredContacts = new ArrayList<>();
-        SQLiteDatabase db = dbHelper.getReadableDatabase(); // Assuming you have a method to get your database
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
 
         Cursor cursor = db.query(
-                "users", // Replace with your table name
-                new String[]{"NAME"}, // Replace with the column containing contact names
+                "users",
+                new String[]{"NAME"},
                 null,
                 null,
                 null,
@@ -144,7 +149,7 @@ public class ContactListActivity extends AppCompatActivity {
     @SuppressLint("Range")
     private String getUserIdForContact(String contactName) {
         String userId = null;
-        SQLiteDatabase db = dbHelper.getReadableDatabase(); // Replace with your database helper instance
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
 
         // Query the database to find the user ID
         String query = "SELECT id FROM users WHERE name = ?";
@@ -152,16 +157,16 @@ public class ContactListActivity extends AppCompatActivity {
 
         if (cursor != null) {
             if (cursor.moveToFirst()) {
-                userId = cursor.getString(cursor.getColumnIndex("ID")); // Retrieve the user ID
+                userId = cursor.getString(cursor.getColumnIndex("ID"));
             }
             cursor.close();
         }
-        return userId; // Return the user ID or null if not found
+        return userId;
     }
 
     private String getCurrentUserId() {
         SharedPreferences sharedPreferences = getSharedPreferences("UserPrefs", MODE_PRIVATE);
-        return sharedPreferences.getString("CURRENT_USER_ID", null); // Retrieve the current user's ID from shared preferences
+        return sharedPreferences.getString("CURRENT_USER_ID", null);
     }
 
 }

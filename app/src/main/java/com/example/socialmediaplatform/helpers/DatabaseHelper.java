@@ -163,7 +163,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 @SuppressLint("Range") String contactId = cursor.getString(cursor.getColumnIndex("ID"));
                 @SuppressLint("Range") String contactName = cursor.getString(cursor.getColumnIndex("NAME"));
 
-                // Format as "contactName (contactId)" or use any format you prefer
                 contacts.add(contactName + " |" + contactId);
             } while (cursor.moveToNext());
         }
@@ -174,5 +173,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return contacts;
     }
 
-
+    public Cursor searchMessages(String userId, String contactId, String searchTerm) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        String query = "SELECT * FROM messages WHERE (sender_id = ? OR sender_id = ?) AND message LIKE ?";
+        String[] args = { userId, contactId, "%" + searchTerm + "%" };
+        return db.rawQuery(query, args);
+    }
 }

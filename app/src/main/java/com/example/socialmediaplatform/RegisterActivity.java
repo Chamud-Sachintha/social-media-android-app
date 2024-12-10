@@ -82,7 +82,7 @@ public class RegisterActivity extends AppCompatActivity {
                 // Navigate back to LoginActivity
                 Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);
                 startActivity(intent);
-                finish(); // Optional: finish RegisterActivity to prevent going back to it
+                finish();
             }
         });
     }

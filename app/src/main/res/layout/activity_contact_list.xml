@@ -4,6 +4,15 @@
     android:layout_height="match_parent"
     android:orientation="vertical">
 
+    <!-- Back Button -->
+    <Button
+        android:id="@+id/btnBack"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Back"
+        android:layout_gravity="start"
+        android:layout_margin="8dp" />
+
     <!-- Heading TextView -->
     <TextView
         android:id="@+id/tvContactListHeading"
@@ -15,8 +24,10 @@
         android:layout_gravity="center_horizontal"
         android:layout_marginBottom="16dp" />
 
+    <!-- Contact List -->
     <ListView
         android:id="@+id/listViewContacts"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
+
 </LinearLayout>

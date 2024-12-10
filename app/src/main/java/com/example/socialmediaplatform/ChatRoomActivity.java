@@ -54,6 +54,9 @@ public class ChatRoomActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chat_room);
 
+        EditText editTextSearch = findViewById(R.id.editTextSearch);
+        Button btnSearch = findViewById(R.id.btnSearch);
+
         firestore = FirebaseFirestore.getInstance();
 
         chatMessagesLayout = findViewById(R.id.chatMessagesLayout);
@@ -65,11 +68,11 @@ public class ChatRoomActivity extends AppCompatActivity {
 
         // Get the contact name from the intent
         contactName = getIntent().getStringExtra("CONTACT_NAME");
-        userId = getIntent().getStringExtra("USER_ID"); // Current user ID
-        contactId = getIntent().getStringExtra("CONTACT_ID"); // Contact ID
+        userId = getIntent().getStringExtra("USER_ID");
+        contactId = getIntent().getStringExtra("CONTACT_ID");
         setTitle("Chat with " + contactName);
 
-        loadChatHistory(); // Load messages from SQLite database
+        loadChatHistory();
 
         btnSend.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -82,7 +85,6 @@ public class ChatRoomActivity extends AppCompatActivity {
 
                     FirebaseFirestore firestore = FirebaseFirestore.getInstance();
 
-                    // Create a message object for Firebase
                     Map<String, Object> messageData = new HashMap<>();
                     messageData.put("userId", userId);
                     messageData.put("messageId", String.valueOf(messageId));
@@ -90,38 +92,69 @@ public class ChatRoomActivity extends AppCompatActivity {
                     messageData.put("message", message);
                     messageData.put("timestamp", timestamp);
 
-                    firestore.collection("messages") // Adjust the collection name as needed
+                    firestore.collection("messages")
                             .add(messageData)
                             .addOnCompleteListener(new OnCompleteListener<DocumentReference>() {
                                 @Override
                                 public void onComplete(@NonNull Task<DocumentReference> task) {
                                     if (task.isSuccessful()) {
-                                        editTextMessage.setText(""); // Clear input field
+                                        editTextMessage.setText("");
                                     } else {
-                                        // Handle error
                                         Toast.makeText(getApplicationContext(), "Failed to send message to Firebase", Toast.LENGTH_SHORT).show();
                                     }
                                 }
                             });
 
-                    // Display the message in the chat
+
                     displayMessage("You: " + message, "0");
-                    editTextMessage.setText(""); // Clear input field
+                    editTextMessage.setText("");
                 }
             }
         });
 
-        loadChatHistory(); // Load messages from SQLite database
+        btnSearch.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                String searchTerm = editTextSearch.getText().toString();
+                if (!searchTerm.isEmpty()) {
+                    searchMessages(searchTerm);
+                } else {
+                    refreshChatHistory();
+                }
+            }
+        });
 
-        // Set up the back button listener
+        loadChatHistory();
+
         btnBack.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                finish(); // Close the current activity and return to the previous one
+                finish();
             }
         });
 
     }
+
+    private void searchMessages(String searchTerm) {
+        Cursor cursor = databaseHelper.searchMessages(userId, contactId, searchTerm);
+        chatMessagesLayout.removeAllViews();
+
+        if (cursor.moveToFirst()) {
+            do {
+                @SuppressLint("Range") String senderId = cursor.getString(cursor.getColumnIndex("sender_id"));
+                @SuppressLint("Range") String message = cursor.getString(cursor.getColumnIndex("message"));
+                @SuppressLint("Range") String messageId = cursor.getString(cursor.getColumnIndex("id"));
+
+                String displayMessage = senderId.equals(userId) ? "You: " : contactName + ": ";
+                displayMessage += message;
+                displayMessage(displayMessage, messageId);
+            } while (cursor.moveToNext());
+        } else {
+            Toast.makeText(this, "No messages found", Toast.LENGTH_SHORT).show();
+        }
+        cursor.close();
+    }
+
     private void loadChatHistory() {
         if (isInternetAvailable()) {
             syncMessagesFromFirebase();
@@ -192,13 +225,11 @@ public class ChatRoomActivity extends AppCompatActivity {
     private void displayMessage(String message, String messageId) {
         TextView messageView = new TextView(this);
         messageView.setText(message);
-        messageView.setTextSize(16); // Set text size
-        messageView.setPadding(16, 8, 16, 8); // Add padding for better readability
+        messageView.setTextSize(16);
+        messageView.setPadding(16, 8, 16, 8);
 
-        // Add the message to the chat layout
         chatMessagesLayout.addView(messageView);
 
-        // Scroll to the bottom of the ScrollView
         scrollView.post(new Runnable() {
             @Override
             public void run() {
@@ -206,48 +237,42 @@ public class ChatRoomActivity extends AppCompatActivity {
             }
         });
 
-        // Set long click listener to edit message
         messageView.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
             public boolean onLongClick(View v) {
-                showEditDialog(messageId, message); // Open dialog to edit message
-                return true; // Indicate that the long-click was handled
+                showEditDialog(messageId, message);
+                return true;
             }
         });
     }
 
     private void showEditDialog(String messageId, String currentMessage) {
-        // Create the dialog for editing or deleting a message
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Edit or Delete Message");
 
-        // Set up the input field
         final EditText input = new EditText(this);
         input.setText(currentMessage);
         builder.setView(input);
 
-        // Add the "OK" button for editing
         builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 String updatedMessage = input.getText().toString();
                 if (!updatedMessage.isEmpty()) {
-                    updateMessageInDatabase(messageId, updatedMessage); // Update the message
-                    refreshChatHistory(); // Refresh to display the updated message
+                    updateMessageInDatabase(messageId, updatedMessage);
+                    refreshChatHistory();
                 }
             }
         });
 
-        // Add a "Delete" button
         builder.setNeutralButton("Delete", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                deleteMessageFromDatabase(messageId); // Delete the message
-                refreshChatHistory(); // Refresh to remove the deleted message from display
+                deleteMessageFromDatabase(messageId);
+                refreshChatHistory();
             }
         });
 
-        // Add a "Cancel" button
         builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
@@ -259,17 +284,15 @@ public class ChatRoomActivity extends AppCompatActivity {
     }
 
     private void updateMessageInDatabase(String messageId, String newMessage) {
-        // Logic to update the message in the database
-        databaseHelper.updateMessage(messageId, newMessage); // Implement in DatabaseHelper
+        databaseHelper.updateMessage(messageId, newMessage);
     }
 
     private void deleteMessageFromDatabase(String messageId) {
-        // Logic to delete the message from the database
-        databaseHelper.deleteMessage(messageId); // Implement this in your DatabaseHelper class
+        databaseHelper.deleteMessage(messageId);
     }
 
     private void refreshChatHistory() {
-        chatMessagesLayout.removeAllViews(); // Clear current messages
-        loadChatHistory(); // Reload messages from the database
+        chatMessagesLayout.removeAllViews();
+        loadChatHistory();
     }
 }
