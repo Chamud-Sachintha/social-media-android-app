@@ -12,7 +12,7 @@ import java.util.List;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
 
-    private static final int DATABASE_VERSION = 1;
+    private static final int DATABASE_VERSION = 7;
     private static final String DATABASE_NAME = "UserDB";
     private static final String TABLE_NAME = "users";
     private static final String COL_1 = "ID";
@@ -30,7 +30,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String COLUMN_TIMESTAMP = "timestamp";
 
     public DatabaseHelper(Context context) {
-        super(context, DATABASE_NAME, null, 2);
+        super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
 
     @Override

@@ -124,7 +124,7 @@ public class ChatRoomActivity extends AppCompatActivity {
             }
         });
 
-        loadChatHistory();
+//        loadChatHistory();
 
         btnBack.setOnClickListener(new View.OnClickListener() {
             @Override
